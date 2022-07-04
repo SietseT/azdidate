@@ -4,10 +4,10 @@
 ## Why?
 In large environments with (cross-repository) YAML templates, things can get quite complex. A change in a YAML template can potentially break one or more pipelines. `azdidate` can be used to validate your pipelines. 
 
-You can manually run `azdidate`, or create a PR validation pipeline and let it run when changes are made to your pipelines. This way, you'll never break your pipelines anymore.
+You can manually run `azdidate`, or create a PR validation pipeline and let it run when changes are made to your pipelines. This way, you'll no longer break your pipelines by accident.
 
 ## About
-`azdidate` uses the Azure DevOps API to validate the pipelines. When you edit the YAML of a pipeline in the Azure DevOps GUI, you have the option to validate the pipeline. `Azdidate` invokes that endpoint when checking the YAML of pipelines in order for the validations to be **reliable**. 
+`azdidate` uses the Azure DevOps API to validate the pipelines. When you edit the YAML of a pipeline in the Azure DevOps GUI, you have the option to validate the pipeline. `azdidate` invokes that endpoint when checking the YAML of pipelines in order for the validations to be reliable. 
 
 Using the Azure DevOps API, `azdidate` can validate things like:
 - YAML syntax
@@ -40,7 +40,7 @@ The following optional arguments are available:
 | --pipeline-id              | Id of pipeline to validate. When not given, validates all pipelines in the project.                                                            |
 | --help                     | Displays the help screen.                                                                                                                      |
 
-## Versions history
+## Version history
 All versions can be found on [Docker Hub](https://hub.docker.com/r/sietsetro/azdidate).
 
 ### 0.1.0
