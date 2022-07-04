@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Azdidate", "Azdidate\Azdidate.csproj", "{157B8E57-52E6-49AF-B864-D36E75BDBE0F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Docker", "Docker", "{D15EE4A5-266E-4B70-8CD5-DD6AC7CE132E}"
+	ProjectSection(SolutionItems) = preProject
+		.dockerignore = .dockerignore
+		Dockerfile = Dockerfile
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{157B8E57-52E6-49AF-B864-D36E75BDBE0F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{157B8E57-52E6-49AF-B864-D36E75BDBE0F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{157B8E57-52E6-49AF-B864-D36E75BDBE0F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{157B8E57-52E6-49AF-B864-D36E75BDBE0F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
