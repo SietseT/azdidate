@@ -16,6 +16,7 @@ internal class ValidatePipelineDto
         }
     }
     
+    // ReSharper disable once UnusedMember.Global
     public bool PreviewRun { get; set; } = true;
     
     public Resources? Resources { get; }
