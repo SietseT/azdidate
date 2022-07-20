@@ -1,8 +1,9 @@
 ﻿using System.Net.Http.Headers;
 using System.Text;
 using Azdidate;
-using Azdidate.Enums;
 using Azdidate.Repositories;
+using Azdidate.Repositories.Abstractions;
+using Azdidate.Validators;
 using CommandLine;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -26,57 +27,21 @@ async Task RunValidation(Arguments arguments)
 
     var httpClient = SetupHttpClientAndJsonSettings(arguments.Organisation, arguments.ProjectName, accessToken);
     var pipelineRepository = new PipelineRepository(httpClient);
-    var pipelineIds = Array.Empty<int>();
+    var pipelineValidator = new PipelineValidator(pipelineRepository);
 
-    if (arguments.PipelineId is null)
-    {
-        var pipelinesResult = await pipelineRepository.GetPipelines();
-        if (pipelinesResult.Object == null)
-        {
-            ErrorWithNonZeroExitCode(pipelinesResult.ErrorMessage);
-        }
-        else
-        {
-            pipelineIds = pipelinesResult.Object.Value?.Select(p => p.Id).ToArray() ?? Array.Empty<int>();
-        }
-    }
-    else
-    {
-        pipelineIds = new[] {arguments.PipelineId.Value};
-    }
-
+    var pipelineIds = await GetPipelineIds(pipelineRepository, arguments.RepositoryName);
     Console.WriteLine($"Validating {pipelineIds.Length} pipelines...");
-
+    
     foreach (var pipelineId in pipelineIds)
     {
-        await ValidatePipeline(pipelineId);
-    }
-    
-    async Task ValidatePipeline(int pipelineId)
-    {
-        var pipelineValidation = await pipelineRepository.ValidatePipeline(pipelineId, arguments.BranchName);
+        var validationResult = await pipelineValidator.ValidatePipeline(pipelineId, arguments.BranchName, arguments.IgnoreNonExisting);
+        
+        Console.WriteLine(validationResult.Object is not null
+            ? validationResult.Object.LogMessage
+            : validationResult.ErrorMessage);
 
-        if (pipelineValidation.Object == ValidationStateEnum.Valid)
-        {
-            Console.WriteLine($"[VALID]    - Pipeline Id {pipelineId}");
-        }
-        else if (pipelineValidation.Object == ValidationStateEnum.PipelineNotInBranch)
-        {
-            Console.WriteLine(
-                $"[{(arguments.IgnoreNonExisting ? "SKIP" : "ERROR")}]     - Pipeline Id {pipelineId}: {pipelineValidation.ErrorMessage}");
-            if (!arguments.IgnoreNonExisting)
-                Environment.ExitCode = -1;
-        }
-        else if (pipelineValidation.Object == ValidationStateEnum.Invalid)
-        {
-            Console.WriteLine($"[INVALID]  - Pipeline Id {pipelineId}: ${pipelineValidation.ErrorMessage}");
+        if((validationResult.Object is not null && !validationResult.Object.Success) || validationResult.Object is null)
             Environment.ExitCode = -1;
-        }
-        else
-        {
-            Console.WriteLine($"[ERROR]    - Pipeline Id {pipelineId}: ${pipelineValidation.ErrorMessage}");
-            Environment.ExitCode = -1;
-        }
     }
 }
 
@@ -96,8 +61,21 @@ HttpClient SetupHttpClientAndJsonSettings(string organisation, string projectNam
     return httpClient;
 }
 
-void ErrorWithNonZeroExitCode(string errorMessage)
+async Task<int[]> GetPipelineIds(IPipelineRepository pipelineRepository, string repositoryName)
 {
-    Console.WriteLine($"[ERROR] - {errorMessage}");
+    var pipelineIdsResult = await pipelineRepository.GetPipelineIds(repositoryName);
+    if (pipelineIdsResult.Object is null)
+    {
+        LogErrorAndExit(pipelineIdsResult.ErrorMessage);
+        return Array.Empty<int>();
+    }
+
+    return pipelineIdsResult.Object.ToArray();
+}
+
+
+void LogErrorAndExit(string errorMessage)
+{
+    Console.WriteLine($"Error: {errorMessage}");
     Environment.Exit(-1);
 }

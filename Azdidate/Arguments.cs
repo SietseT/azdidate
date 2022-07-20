@@ -12,6 +12,10 @@ internal class Arguments
         HelpText = "Azure DevOps project that contains the pipeline(s) to validate.")]
     public string ProjectName { get; set; } = null!;
     
+    [Option("repository", Required = true, 
+        HelpText = "Repository where pipelines are located.")]
+    public string RepositoryName { get; set; } = null!;
+    
     [Option("branch", Required = false, 
         HelpText = "Branch to validate against. Will fallback to default branch if not specified.")]
     public string? BranchName { get; set; }

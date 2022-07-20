@@ -2,11 +2,12 @@ using System.Net;
 using System.Text;
 using Azdidate.DTOs;
 using Azdidate.Enums;
+using Azdidate.Repositories.Abstractions;
 using Newtonsoft.Json;
 
 namespace Azdidate.Repositories;
 
-internal class PipelineRepository
+internal class PipelineRepository : IPipelineRepository
 {
     private readonly HttpClient _httpClient;
 
@@ -15,54 +16,84 @@ internal class PipelineRepository
         _httpClient = httpClient;
     }
 
-    internal async Task<Result<GetPipelinesDto>> GetPipelines()
+    public async Task<Result<IEnumerable<int>>> GetPipelineIds(string repositoryName)
     {
-        var request = new HttpRequestMessage(HttpMethod.Get, new Uri($"_apis/build/definitions?api-version=7.1-preview", UriKind.Relative));
-        var response = await _httpClient.SendAsync(request);
+        var buildDefinitions = new List<GetPipelinesDto.BuildDefinition>();
+        var continuationToken = string.Empty;
 
-        if (response.IsSuccessStatusCode)
+        while (continuationToken is not null)
         {
-            var result = await DeserializeFromResponse(response);
-            return result;
+            var additionalQueryParameters = string.Empty;
+            if (!string.IsNullOrWhiteSpace(continuationToken))
+                additionalQueryParameters = $"&continuationToken={continuationToken}";
+
+            var request = new HttpRequestMessage(HttpMethod.Get, new Uri($"_apis/build/definitions?includeAllProperties=true&queryOrder=definitionNameAscending{additionalQueryParameters}&$top=1&api-version=7.1-preview", UriKind.Relative));
+            var response = await _httpClient.SendAsync(request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await DeserializeFromResponse(response);
+                if (result.Object?.Value is not null)
+                    buildDefinitions.AddRange(result.Object.Value);
+                
+                continuationToken = response.Headers.TryGetValues("x-ms-continuationtoken", out var values) 
+                    ? values.First() : null;
+            }
+            else
+            {
+                return response.StatusCode == HttpStatusCode.Unauthorized
+                    ? new Result<IEnumerable<int>>("Personal Access Token is invalid or does not have permissions.")
+                    : new Result<IEnumerable<int>>($"Response returned statuscode: {response.StatusCode}");
+            }
         }
-        return response.StatusCode == HttpStatusCode.Unauthorized 
-            ? new Result<GetPipelinesDto>("Personal Access Token is invalid or does not have permissions.") 
-            : new Result<GetPipelinesDto>($"Response returned statuscode: {response.StatusCode}");
+
+        var buildDefinitionsFiltered = buildDefinitions.Where(b =>
+            b.Repository?.Name != null &&
+            b.Repository.Name.Equals(repositoryName, StringComparison.OrdinalIgnoreCase));
+
+        return new Result<IEnumerable<int>>(buildDefinitionsFiltered.Select(p => p.Id));
     }
 
-    internal async Task<Result<ValidationStateEnum>> ValidatePipeline(int pipelineId, string? branchName = null)
+    public async Task<Result<ValidationStateEnum>> ValidatePipeline(int pipelineId, string? branchName = null)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, new Uri($"_apis/pipelines/{pipelineId}/runs?api-version=5.1-preview", UriKind.Relative));
         var requestBody = new ValidatePipelineDto(branchName);
         request.Content = new StringContent(JsonConvert.SerializeObject(requestBody), Encoding.UTF8, "application/json");
 
-        var response = await _httpClient.SendAsync(request);
+        try
+        {
+            var response = await _httpClient.SendAsync(request);
 
-        var validationResult = ValidationStateEnum.Valid;
-        string? message;
+            var validationResult = ValidationStateEnum.Valid;
+            string? message;
 
-        if (response.IsSuccessStatusCode)
-        {
-            return new Result<ValidationStateEnum>(validationResult);
+            if (response.IsSuccessStatusCode)
+            {
+                return new Result<ValidationStateEnum>(validationResult);
+            }
+
+            if (response.StatusCode == HttpStatusCode.BadRequest)
+            {
+                return await HandleBadRequest(response);
+            }
+
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                validationResult = ValidationStateEnum.Error;
+                message = "Personal Access Token is invalid or does not have permissions.";
+            }
+            else
+            {
+                validationResult = ValidationStateEnum.Error;
+                message = $"Response returned statuscode: {response.StatusCode}";
+            }
+
+            return new Result<ValidationStateEnum>(validationResult, message);
         }
-        
-        if (response.StatusCode == HttpStatusCode.BadRequest)
+        catch (Exception ex)
         {
-            return await HandleBadRequest(response);
+            return new Result<ValidationStateEnum>(ex.Message);
         }
-        
-        if (response.StatusCode == HttpStatusCode.Unauthorized)
-        {
-            validationResult = ValidationStateEnum.Error;
-            message = "Personal Access Token is invalid or does not have permissions.";
-        }
-        else
-        {
-            validationResult = ValidationStateEnum.Error;
-            message = $"Response returned statuscode: {response.StatusCode}";
-        }
-        
-        return new Result<ValidationStateEnum>(validationResult, message);
     }
 
     private async Task<Result<GetPipelinesDto>> DeserializeFromResponse(HttpResponseMessage response)

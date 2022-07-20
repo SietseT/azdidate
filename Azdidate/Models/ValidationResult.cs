@@ -1,15 +1,13 @@
-using Azdidate.Enums;
-
 namespace Azdidate.Models;
 
 internal class ValidationResult
 {
-    internal ValidationResult(ValidationStateEnum state, string? message = null)
+    internal ValidationResult(string logMessage, bool success)
     {
-        State = state;
-        Message = message;
+        LogMessage = logMessage;
+        Success = success;
     }
-
-    public ValidationStateEnum State { get; }
-    public string? Message { get; }
+    
+    public string LogMessage { get; }
+    public bool Success { get; }
 }
