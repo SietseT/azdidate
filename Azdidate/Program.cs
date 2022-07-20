@@ -58,6 +58,17 @@ async Task RunValidation(Arguments arguments)
     }
 }
 
+async Task<int[]> GetPipelineIds(IPipelineRepository pipelineRepository, string repositoryName)
+{
+    var pipelineIdsResult = await pipelineRepository.GetPipelineIds(repositoryName);
+    if (pipelineIdsResult.Object is null)
+    {
+        throw new Exception(pipelineIdsResult.ErrorMessage);
+    }
+
+    return pipelineIdsResult.Object.ToArray();
+}
+
 HttpClient SetupHttpClientAndJsonSettings(string organisation, string projectName, string accessToken)
 {
     var httpClient = new HttpClient();
@@ -72,17 +83,6 @@ HttpClient SetupHttpClientAndJsonSettings(string organisation, string projectNam
     };
 
     return httpClient;
-}
-
-async Task<int[]> GetPipelineIds(IPipelineRepository pipelineRepository, string repositoryName)
-{
-    var pipelineIdsResult = await pipelineRepository.GetPipelineIds(repositoryName);
-    if (pipelineIdsResult.Object is null)
-    {
-        throw new Exception(pipelineIdsResult.ErrorMessage);
-    }
-
-    return pipelineIdsResult.Object.ToArray();
 }
 
 ILogger GetConsoleLogger()
