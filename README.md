@@ -24,7 +24,8 @@ Using the Azure DevOps API, `azdidate` can validate things like:
 docker run --rm sietsetro/azdidate:0.1.0 \
     --env ACCESS_TOKEN=<YourPersonalAccessToken> \
     --organisation <YourAzureDevOpsOrganisation> \
-    --project <YourAzureDevOpsProject>
+    --project <YourAzureDevOpsProject> \ 
+    --repository <YourAzureDevOpsRepository>
 ```
 
 `azdidate` needs a [Personal Access Token](https://docs.microsoft.com/en-us/azure/devops/organizations/accounts/use-personal-access-tokens-to-authenticate?view=azure-devops&tabs=Windows) with the scope: `Build (Read & Execute)`.
@@ -39,6 +40,10 @@ The following optional arguments are available:
 | --ignore-non-existing-yaml | (Default: false) Whether to return a non-zero exit code when the YAML file of a pipeline does not exist in the branch that is checked against. |
 | --pipeline-id              | Id of pipeline to validate. When not given, validates all pipelines in the project.                                                            |
 | --help                     | Displays the help screen.                                                                                                                      |
+
+## Limitations
+Due to limitations in the Azure DevOps REST API, it is not possible to:
+- Validate pipelines in external repositories, like GitHub
 
 ## Version history
 All versions can be found on [Docker Hub](https://hub.docker.com/r/sietsetro/azdidate).

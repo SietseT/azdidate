@@ -41,7 +41,10 @@ async Task RunValidation(Arguments arguments)
     var pipelineRepository = new PipelineRepository(httpClient);
     var pipelineValidator = new PipelineValidator(pipelineRepository);
 
-    var pipelineIds = await GetPipelineIds(pipelineRepository, arguments.RepositoryName);
+    var pipelineIds = arguments.PipelineId is null
+        ? await GetPipelineIds(pipelineRepository, arguments.RepositoryName)
+        : new[] {arguments.PipelineId.Value};
+    
     logger.LogInformation("Validating {Pipelines} pipelines...", pipelineIds.Length);
     
     foreach (var pipelineId in pipelineIds)
